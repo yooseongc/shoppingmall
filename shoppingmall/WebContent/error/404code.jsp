@@ -5,4 +5,4 @@
 <%response.setStatus(HttpServletResponse.SC_OK);%>  
   
 <title>404에러 페이지</title>
-<img src="/textbook/error/notfound.jpg">
+<img src="/shoppingmall/error/notfound.jpg">
