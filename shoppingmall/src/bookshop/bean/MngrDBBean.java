@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,456 +14,447 @@ import javax.sql.DataSource;
 import work.crypt.BCrypt;
 import work.crypt.SHA256;
 
-/**
- * ∞¸∏Æ¿⁄ ¿Œ¡ı, ªÛ«∞ ∞¸∏Æ, ±∏∏≈ ∞¸∏Æ ∫Œ∫–ø°º≠ ªÁøÎ«œ¥¬ DB √≥∏Æ∫Û
- * @author ¿Øº∫
- */
 public class MngrDBBean {
-	
-	// MngrDBBean ¿¸ø™ ∞¥√º ª˝º∫ --> Singleton Pattern
-	private static MngrDBBean instance = new MngrDBBean();
-	
-	public static MngrDBBean getInstance() {
-		return instance;
-	}
-	
-	private MngrDBBean() { }
-	
-	/**
-	 * ƒø≥ÿº««Æø°º≠ ƒø≥ºº« ∞¥√º∏¶ æÚæÓ≥ª¥¬ ∏ﬁº“µÂ.
-	 * @return java.sql.Connection
-	 * @throws Exception
-	 */
-	private Connection getConnection() throws Exception {
-		Context initCtx = new InitialContext();
-		Context envCtx = (Context) initCtx.lookup("java:comp/env");
-		DataSource ds = (DataSource) envCtx.lookup("jdbc/shoppingmall");
-		return ds.getConnection();
-	}
-	
-	/**
-	 * ¿‘∑¬«— ∞¸∏Æ¿⁄ æ∆¿ÃµøÕ ∫Òπ–π¯»£∏¶ ∞ÀªÁ«œ¥¬ ∏ﬁº“µÂ.
-	 * @param id
-	 * @param passwd
-	 * @return 
-	 * (int) 
-	 * [-1] : æ∆¿Ãµ æ¯¿Ω,
-	 * [0] : ∫Òπ–π¯»£ ∆≤∏≤,
-	 * [1] : ¿Œ¡ı º∫∞¯
-	 */
-	public int userCheck(String id, String passwd) {
+	//MngrDBBean Ï†ÑÏó≠ Í∞ùÏ≤¥ ÏÉùÏÑ± <- ÌïúÍ∞úÏùò Í∞ùÏ≤¥Îßå ÏÉùÏÑ±Ìï¥ÏÑú Í≥µÏú†
+    private static MngrDBBean instance = new MngrDBBean();
+    
+    //MngrDBBeanÍ∞ùÏ≤¥Î•º Î¶¨ÌÑ¥ÌïòÎäî Î©îÏÜåÎìú
+    public static MngrDBBean getInstance() {
+        return instance;
+    }
+    
+    private MngrDBBean() {}
+    
+    //Ïª§ÎÑ•ÏÖò ÌíÄÏóêÏÑú Ïª§ÎÑ•ÏÖò Í∞ùÏ≤¥Î•º ÏñªÏñ¥ÎÇ¥Îäî Î©îÏÜåÎìú
+    private Connection getConnection() throws Exception {
+        Context initCtx = new InitialContext();
+        Context envCtx = (Context) initCtx.lookup("java:comp/env");
+        DataSource ds = (DataSource)envCtx.lookup("jdbc/jsptest");
+        return ds.getConnection();
+    }
+    
+    //Í¥ÄÎ¶¨Ïûê Ïù∏Ï¶ù Î©îÏÜåÎìú
+    public int userCheck(String id, String passwd){
 		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		int x = -1;
-		
+        PreparedStatement pstmt = null;
+		ResultSet rs= null;
+		int x=-1;
+        
 		SHA256 sha = SHA256.getInsatnce();
 		try {
-			conn = getConnection();
+            conn = getConnection();
+            
+            String orgPass = passwd;
+            String shaPass = sha.getSha256(orgPass.getBytes());
+        	
+            pstmt = conn.prepareStatement(
+              "select managerPasswd from manager where managerId = ?");
+            pstmt.setString(1, id);
+            rs= pstmt.executeQuery();
+
+			if(rs.next()){//Ìï¥Îãπ ÏïÑÏù¥ÎîîÍ∞Ä ÏûàÏúºÎ©¥ ÏàòÌñâ
+				String dbpasswd= rs.getString("managerPasswd"); 
+				if(BCrypt.checkpw(shaPass,dbpasswd))
+					x= 1; //Ïù∏Ï¶ùÏÑ±Í≥µ
+				else
+					x= 0; //ÎπÑÎ∞ÄÎ≤àÌò∏ ÌãÄÎ¶º
+			}else//Ìï¥Îãπ ÏïÑÏù¥Îîî ÏóÜÏúºÎ©¥ ÏàòÌñâ
+				x= -1;//ÏïÑÏù¥Îîî ÏóÜÏùå
 			
-			String orgPass = passwd;
-			String shaPass = sha.getSha256(orgPass.getBytes());
-			
-			pstmt = conn.prepareStatement("select managerPasswd from manager where managerId = ?");
-			pstmt.setString(1, id);
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				String dbPasswd = rs.getString("managerPasswd");
-				if (BCrypt.checkpw(shaPass, dbPasswd)) {
-					x = 1;
-				} else {
-					x = 0;
-				}
-			} else {
-				x = -1;
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+			if (rs != null) try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) try { conn.close(); } catch(SQLException ex) {}
+        }
 		return x;
 	}
-	
-	/**
-	 * √• µÓ∑œ ∏ﬁº“µÂ
-	 * @param book
-	 * @throws Exception
-	 */
-	public void insertBook(MngrDataBean book) throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		
-		try {
-			conn = getConnection();
-			String sql = "insert into book(book_id, book_kind, book_title, book_price, ";
-			sql += "book_count, author, publishing_com, publishing_date, book_image, ";
-			sql += "book_content, discount_rate, reg_date) values (book_seq.nextval, ";
-			sql += "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-			
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setString(1, book.getBook_kind());
-			pstmt.setString(2, book.getBook_title());
-			pstmt.setInt(3, book.getBook_price());
-			pstmt.setShort(4, book.getBook_count());
-			pstmt.setString(5, book.getAuthor());
-			pstmt.setString(6, book.getPublishing_com());
+    
+    //Ï±Ö Îì±Î°ù Î©îÏÜåÎìú
+    public void insertBook(MngrDataBean book) 
+    throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        
+        try {
+            conn = getConnection();
+            String sql = "insert into book(book_kind,book_title,book_price,";
+            sql += "book_count,author,publishing_com,publishing_date,book_image,";
+            sql += "book_content,discount_rate,reg_date) values (?,?,?,?,?,?,?,?,?,?,?)";
+            
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, book.getBook_kind());
+            pstmt.setString(2, book.getBook_title());
+            pstmt.setInt(3, book.getBook_price());
+            pstmt.setShort(4, book.getBook_count());
+            pstmt.setString(5, book.getAuthor());
+            pstmt.setString(6, book.getPublishing_com());
 			pstmt.setString(7, book.getPublishing_date());
 			pstmt.setString(8, book.getBook_image());
 			pstmt.setString(9, book.getBook_content());
-			pstmt.setByte(10, book.getDiscount_rate());
+			pstmt.setByte(10,book.getDiscount_rate());
 			pstmt.setTimestamp(11, book.getReg_date());
 			
-			pstmt.executeUpdate();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-	}
-	
-	/**
-	 * ¿ÃπÃ µÓ∑œµ» √•¿Œ¡ˆ ∞À¡ı«œ¥¬ ∏ﬁº“µÂ.
-	 * @param kind
-	 * @param bookName
-	 * @param author
-	 * @return (int) [1]: «ÿ¥Á √•¿Ã ¿ÃπÃ µÓ∑œµ«æÓ ¿÷¿Ω, [-1]: «ÿ¥Á √•¿Ã µÓ∑œµ«æÓ¿÷¡ˆ æ ¿Ω.
-	 * @throws Exception
-	 */
-	public int registedBookconfirm(String kind, String bookName, String author) throws Exception {
+            pstmt.executeUpdate();
+            
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
+    }
+    
+    //Ïù¥ÎØ∏Îì±Î°ùÎêú Ï±ÖÏùÑ Í≤ÄÏ¶ù
+	public int registedBookconfirm(
+			String kind, String bookName, String author) 
+	throws Exception {
 		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		int x = -1;
-		
+        PreparedStatement pstmt = null;
+		ResultSet rs= null;
+		int x=-1;
+        
 		try {
-			conn = getConnection();
+            conn = getConnection();
+            
+            String sql = "select book_name from book ";
+            sql += " where book_kind = ? and book_name = ? and author = ?";
+            
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, kind);
+            pstmt.setString(2, bookName);
+            pstmt.setString(3, author);
+            
+            rs= pstmt.executeQuery();
+
+			if(rs.next())
+				x= 1; //Ìï¥Îãπ Ï±ÖÏù¥ Ïù¥ÎØ∏ Îì±Î°ùÎêòÏñ¥ ÏûàÏùå
+			else
+				x= -1;//Ìï¥Îãπ Ï±ÖÏù¥ Ïù¥ÎØ∏ Îì±Î°ùÎêòÏñ¥ ÏûàÏßÄ ÏïäÏùå	
 			
-			String sql = "select book_name from book ";
-			sql += "where book_kind = ? and book_name = ? and author = ?";
-			
-			pstmt =conn.prepareStatement(sql);
-			pstmt.setString(1, kind);
-			pstmt.setString(2, bookName);
-			pstmt.setString(3, author);
-			
-			rs = pstmt.executeQuery();
-			if (rs.next()) {
-				x = 1;
-			} else {
-				x = -1;
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+			if (rs != null) 
+				try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
+		return x;
+	}
+    
+	// Ï†ÑÏ≤¥Îì±Î°ùÎêú Ï±ÖÏùò ÏàòÎ•º ÏñªÏñ¥ÎÇ¥Îäî Î©îÏÜåÎìú
+	public int getBookCount()
+    throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+
+        int x=0;
+
+        try {
+            conn = getConnection();
+            
+            pstmt = conn.prepareStatement("select count(*) from book");
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) 
+               x= rs.getInt(1);
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) 
+            	try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
+		return x;
+    }
+	
+	// Ìï¥Îãπ Î∂ÑÎ•òÏùò Ï±ÖÏùò ÏàòÎ•º ÏñªÏñ¥ÎÇ¥Îäî Î©îÏÜåÎìú
+	public int getBookCount(String book_kind)
+	throws Exception {
+	    Connection conn = null;
+	    PreparedStatement pstmt = null;
+	    ResultSet rs = null;
+
+	    int x=0;
+	    int kind  = Integer.parseInt(book_kind);
+
+	    try {
+	        conn = getConnection();
+	        String query = "select count(*) from book where book_kind=" + kind;
+	        pstmt = conn.prepareStatement(query);
+	        rs = pstmt.executeQuery();
+
+	        if (rs.next()) 
+	            x= rs.getInt(1);
+	    } catch(Exception ex) {
+	        ex.printStackTrace();
+	    } finally {
+	        if (rs != null) 
+	           try { rs.close(); } catch(SQLException ex) {}
+	        if (pstmt != null) 
+	           try { pstmt.close(); } catch(SQLException ex) {}
+	        if (conn != null) 
+	           try { conn.close(); } catch(SQLException ex) {}
+	    }
 		return x;
 	}
 	
-	
-	/**
-	 * book ≈◊¿Ã∫Ìø° ¿˙¿Âµ» √— √•¿« ºˆ∏¶ π›»Ø«œ¥¬ ∏ﬁº“µÂ.
-	 * @return (int) √— √•¿« ºˆ
-	 * @throws Exception
-	 */
-	public int getBookCount() throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		int x = 0;
-		
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select count(*) from book");
-			rs = pstmt.executeQuery();
-			if (rs.next()) {
-				x = rs.getInt(1);
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+	//Ï±ÖÏùò Ï†úÎ™©ÏùÑ ÏñªÏñ¥ÎÉÑ
+	public String getBookTitle(int book_id){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        String x="";
+
+        try {
+            conn = getConnection();
+            
+            pstmt = conn.prepareStatement("select book_title from book where book_id = "+book_id);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) 
+               x= rs.getString(1);
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try{ rs.close(); }catch(SQLException ex) {}
+            if (pstmt != null) try{ pstmt.close(); }catch(SQLException ex) {}
+            if (conn != null) try{ conn.close(); }catch(SQLException ex) {}
+        }
 		return x;
-	}
-	
-	/**
-	 * «ÿ¥Á ∫–∑˘¿« √•¿« ºˆ∏¶ æÚæÓ≥ª¥¬ ∏ﬁº“µÂ.
-	 * @param book_kind
-	 * @return (int) «ÿ¥Á ∫–∑˘¿« √•¿« ºˆ
-	 * @throws Exception
-	 */
-	public int getBookCount(String book_kind) throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		int x = 0;
-		int kind = Integer.parseInt(book_kind);
-		
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select count(*) from book where book_kind =" + kind);
-			rs = pstmt.executeQuery();
-			if (rs.next()) {
-				x = rs.getInt(1);
+    }
+	// Î∂ÑÎ•òÎ≥ÑÎòêÎäî Ï†ÑÏ≤¥Îì±Î°ùÎêú Ï±ÖÏùò Ï†ïÎ≥¥Î•º ÏñªÏñ¥ÎÇ¥Îäî Î©îÏÜåÎìú
+	public List<MngrDataBean> getBooks(String book_kind)
+    throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<MngrDataBean> bookList=null;
+        
+        try {
+            conn = getConnection();
+            
+            String sql1 = "select * from book";
+            String sql2 = "select * from book ";
+            sql2 += "where book_kind = ? order by reg_date desc";
+            
+            if(book_kind.equals("all")||book_kind.equals("")){
+            	 pstmt = conn.prepareStatement(sql1);
+            }else{
+                pstmt = conn.prepareStatement(sql2);
+                pstmt.setString(1, book_kind);
+            }
+        	rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                bookList = new ArrayList<MngrDataBean>();
+                do{
+                	MngrDataBean book= new MngrDataBean();
+                     
+                     book.setBook_id(rs.getInt("book_id"));
+                     book.setBook_kind(rs.getString("book_kind"));
+                     book.setBook_title(rs.getString("book_title"));
+                     book.setBook_price(rs.getInt("book_price"));
+                     book.setBook_count(rs.getShort("book_count"));
+                     book.setAuthor(rs.getString("author"));
+                     book.setPublishing_com(rs.getString("publishing_com"));
+                     book.setPublishing_date(rs.getString("publishing_date"));
+                     book.setBook_image(rs.getString("book_image"));
+                     book.setDiscount_rate(rs.getByte("discount_rate"));
+                     book.setReg_date(rs.getTimestamp("reg_date"));
+                     
+                     bookList.add(book);
+			    }while(rs.next());
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-		return x;
-	}
-	
-	/**
-	 * √•¿« ¿œ∑√π¯»£∑Œ √•¿« ¡¶∏Ò¿ª æÚæÓ≥ª¥¬ ∏ﬁº“µÂ
-	 * @param book_id
-	 * @return (String) «ÿ¥Á √•¿« ¡¶∏Ò
-	 */
-	public String getBookTitle(int book_id) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		String x = "";
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select book_title from book where book_id =" + book_id);
-			rs = pstmt.executeQuery();
-			if (rs.next()) {
-				x = rs.getString(1);
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-		return x;
-	}
-	
-	/**
-	 * ∫–∑˘∫∞ ∂«¥¬ ¿¸√º µÓ∑œµ» √•¿« DTO ∞¥√º ∏ÆΩ∫∆Æ∏¶ æÚæÓ≥ª¥¬ ∏ﬁº“µÂ
-	 * @param book_kind
-	 * @return List<MngrDataBean>
-	 * @throws Exception
-	 */
-	public List<MngrDataBean> getBooks(String book_kind) throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		List<MngrDataBean> bookList = null;
-		try {
-			conn = getConnection();
-			
-			String sql1 = "select * from book";
-			String sql2 = "select * from book where book_kind = ? order by reg_date desc";
-			
-			if (book_kind.equals("all") || book_kind.equals("")) {
-				pstmt = conn.prepareStatement(sql1);
-			} else {
-				pstmt = conn.prepareStatement(sql2);
-				pstmt.setString(1, book_kind);
-			}
-			rs = pstmt.executeQuery();
-			if (rs.next()) {
-				bookList = new ArrayList<MngrDataBean>();
-				do {
-					MngrDataBean book = new MngrDataBean();
-					
-					book.setBook_id(rs.getInt("book_id"));
-					book.setBook_kind(rs.getString("book_kind"));
-					book.setBook_title(rs.getString("book_title"));
-					book.setBook_price(rs.getInt("book_price"));
-					book.setBook_count(rs.getShort("book_count"));
-					book.setAuthor(rs.getString("author"));
-					book.setPublishing_com(rs.getString("publishing_com"));
-					book.setPublishing_date(rs.getString("publishing_date"));
-					book.setBook_image(rs.getString("book_image"));
-					book.setDiscount_rate(rs.getByte("discount_rate"));
-					book.setReg_date(rs.getTimestamp("reg_date"));
-					
-					bookList.add(book);
-				} while (rs.next());
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) 
+            	try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
 		return bookList;
-	}
+    }
 	
-	/**
-	 * ∫–∑˘∫∞ Ω≈∞£√• ∏Ò∑œ¿ª æÚæÓ≥ª¥¬ ∏ﬁº“µÂ. count ∞≥ºˆ∏∏≈≠¿« √÷Ω≈ µÓ∑œ √•¿ª «•Ω√«—¥Ÿ.
-	 * @param book_kind
-	 * @param count
-	 * @return MngrDataBean[]
-	 * @throws Exception
-	 */
-	public MngrDataBean[] getBooks(String book_kind, int count) throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		MngrDataBean bookList[] = null;
-		int i = 0;
-		
-		try {
-			conn = getConnection();
-			
-			String sql = "select * from (select book.* from book where book_kind = ? ";
-			sql += "order by reg_date desc) where rownum <= ?";
-			
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setString(1, book_kind);
-			pstmt.setInt(2, count);
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				bookList = new MngrDataBean[count];
-				do {
-					MngrDataBean book = new MngrDataBean();
-					book.setBook_id(rs.getInt("book_id"));
-					book.setBook_kind(rs.getString("book_kind"));
-					book.setBook_title(rs.getString("book_title"));
-					book.setBook_price(rs.getInt("book_price"));
-					book.setBook_count(rs.getShort("book_count"));
-					book.setAuthor(rs.getString("author"));
-					book.setPublishing_com(rs.getString("publishing_com"));
-					book.setPublishing_date(rs.getString("publishing_date"));
-					book.setBook_image(rs.getString("book_image"));
-					book.setDiscount_rate(rs.getByte("discount_rate"));
-					book.setReg_date(rs.getTimestamp("reg_date"));
-					
-					bookList[i] = book;
-					i++;
-				} while(rs.next());
+	// ÏáºÌïëÎ™∞ Î©îÏù∏Ïóê ÌëúÏãúÌïòÍ∏∞ ÏúÑÌï¥ÏÑú ÏÇ¨Ïö©ÌïòÎäî Î∂ÑÎ•òÎ≥Ñ Ïã†Í∞ÑÏ±ÖÎ™©Î°ùÏùÑ ÏñªÏñ¥ÎÇ¥Îäî Î©îÏÜåÎìú
+	public MngrDataBean[] getBooks(String book_kind,int count)
+    throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        MngrDataBean bookList[]=null;
+        int i=0;
+        
+        try {
+            conn = getConnection();
+            
+            String sql = "select * from book where book_kind = ? ";
+            sql += "order by reg_date desc limit ?,?";
+            
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, book_kind);
+            pstmt.setInt(2, 0);
+            pstmt.setInt(3, count);
+        	rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                bookList = new MngrDataBean[count];
+                do{
+                	MngrDataBean book= new MngrDataBean();
+                    book.setBook_id(rs.getInt("book_id"));
+                    book.setBook_kind(rs.getString("book_kind"));
+                    book.setBook_title(rs.getString("book_title"));
+                    book.setBook_price(rs.getInt("book_price"));
+                    book.setBook_count(rs.getShort("book_count"));
+                    book.setAuthor(rs.getString("author"));
+                    book.setPublishing_com(rs.getString("publishing_com"));
+                    book.setPublishing_date(rs.getString("publishing_date"));
+                    book.setBook_image(rs.getString("book_image"));
+                    book.setDiscount_rate(rs.getByte("discount_rate"));
+                    book.setReg_date(rs.getTimestamp("reg_date"));
+                     
+                    bookList[i]=book;
+                     
+                    i++;
+			    }while(rs.next());
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) 
+            	try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
 		return bookList;
-	}
+    }
 	
-	/**
-	 * bookIdø° «ÿ¥Á«œ¥¬ √•¿« ¡§∫∏∏¶ æÚæÓ≥ª¥¬ ∏ﬁº“µÂ.
-	 * µÓ∑œµ» √•¿ª ºˆ¡§«œ±‚ ¿ß«ÿ ºˆ¡§ ∆˚¿∏∑Œ ¿–æÓµÈ¿Ã±‚ ¿ß«— ∏ﬁº“µÂ.
-	 * @param bookId
-	 * @return MngrDataBean
-	 * @throws Exception
-	 */
-	public MngrDataBean getBook(int bookId) throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		MngrDataBean book = null;
-		
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select * from book where book_id = ?");
-			pstmt.setInt(1, bookId);
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				book = new MngrDataBean();
-				book.setBook_kind(rs.getString("book_kind"));
-				book.setBook_title(rs.getString("book_title"));
-				book.setBook_price(rs.getInt("book_price"));
-				book.setBook_count(rs.getShort("book_count"));
-				book.setAuthor(rs.getString("author"));
-				book.setPublishing_com(rs.getString("publishing_com"));
-				book.setPublishing_date(rs.getString("publishing_date"));
-				book.setBook_image(rs.getString("book_image"));
-				book.setDiscount_rate(rs.getByte("discount_rate"));
-				book.setBook_content(rs.getString("book_content"));
+	// bookIdÏóê Ìï¥ÎãπÌïòÎäî Ï±ÖÏùò Ï†ïÎ≥¥Î•º ÏñªÏñ¥ÎÇ¥Îäî Î©îÏÜåÎìúÎ°ú 
+    //Îì±Î°ùÎêú Ï±ÖÏùÑ ÏàòÏ†ïÌïòÍ∏∞ ÏúÑÌï¥ ÏàòÏ†ïÌèºÏúºÎ°ú ÏùΩÏñ¥Îì§Í∏∞Ïù¥Í∏∞ ÏúÑÌïú Î©îÏÜåÎìú
+	public MngrDataBean getBook(int bookId)
+    throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        MngrDataBean book=null;
+        
+        try {
+            conn = getConnection();
+            
+            pstmt = conn.prepareStatement(
+            	"select * from book where book_id = ?");
+            pstmt.setInt(1, bookId);
+            
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                book = new MngrDataBean();
+                
+                book.setBook_kind(rs.getString("book_kind"));
+                book.setBook_title(rs.getString("book_title"));
+                book.setBook_price(rs.getInt("book_price"));
+                book.setBook_count(rs.getShort("book_count"));
+                book.setAuthor(rs.getString("author"));
+                book.setPublishing_com(rs.getString("publishing_com"));
+                book.setPublishing_date(rs.getString("publishing_date"));
+                book.setBook_image(rs.getString("book_image"));
+                book.setBook_content(rs.getString("book_content"));
+                book.setDiscount_rate(rs.getByte("discount_rate"));
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) 
+            	try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
 		return book;
-	}
-	
-	/**
-	 * bookIdø° «ÿ¥Á«œ¥¬ µÓ∑œµ» √•¿« ¡§∫∏∏¶ ºˆ¡§ Ω√ ªÁøÎ«œ¥¬ ∏ﬁº“µÂ.
-	 * @param book
-	 * @param bookId
-	 * @throws Exception
-	 */
-	public void updateBook(MngrDataBean book, int bookId) throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		String sql;
-		
-		try {
-			conn = getConnection();
-			
-			sql = "update book set book_kind = ?, book_title = ?, book_price = ?, ";
-			sql += "book_count = ?, author = ?, publishing_com = ?, publishing_date = ?, ";
-			sql += "book_image = ?, book_content = ?, discount_rate = ? ";
-			sql += "where book_id = ?";
-			pstmt = conn.prepareStatement(sql);
-			
-			pstmt.setString(1, book.getBook_kind());
-			pstmt.setString(2, book.getBook_title());
-			pstmt.setInt(3, book.getBook_price());
-			pstmt.setShort(4, book.getBook_count());
-			pstmt.setString(5, book.getAuthor());
-			pstmt.setString(6, book.getPublishing_com());
+    }
+    
+    // Îì±Î°ùÎêú Ï±ÖÏùò Ï†ïÎ≥¥Î•º ÏàòÏ†ïÏãú ÏÇ¨Ïö©ÌïòÎäî Î©îÏÜåÎìú
+    public void updateBook(MngrDataBean book, int bookId)
+    throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        String sql;
+        
+        try {
+            conn = getConnection();
+            
+            sql = "update book set book_kind=?,book_title=?,book_price=?";
+            sql += ",book_count=?,author=?,publishing_com=?,publishing_date=?";
+            sql += ",book_image=?,book_content=?,discount_rate=?";
+            sql += " where book_id=?";
+            
+            pstmt = conn.prepareStatement(sql);
+            
+            pstmt.setString(1, book.getBook_kind());
+            pstmt.setString(2, book.getBook_title());
+            pstmt.setInt(3, book.getBook_price());
+            pstmt.setShort(4, book.getBook_count());
+            pstmt.setString(5, book.getAuthor());
+            pstmt.setString(6, book.getPublishing_com());
 			pstmt.setString(7, book.getPublishing_date());
 			pstmt.setString(8, book.getBook_image());
 			pstmt.setString(9, book.getBook_content());
 			pstmt.setByte(10, book.getDiscount_rate());
 			pstmt.setInt(11, bookId);
-			
-			pstmt.executeUpdate();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-	}
-	
-	/**
-	 * bookIdø° «ÿ¥Á«œ¥¬ √•¿« ¡§∫∏∏¶ ªË¡¶Ω√ ªÁøÎ«œ¥¬ ∏ﬁº“µÂ.
-	 * @param bookId
-	 * @throws Exception
-	 */
-	public void deleteBook(int bookId) throws Exception {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		
-		try {
+            
+            pstmt.executeUpdate();
+            
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
+    }
+    
+    // bookIdÏóê Ìï¥ÎãπÌïòÎäî Ï±ÖÏùò Ï†ïÎ≥¥Î•º ÏÇ≠Ï†úÏãú ÏÇ¨Ïö©ÌïòÎäî Î©îÏÜåÎìú
+    public void deleteBook(int bookId)
+    throws Exception {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs= null;
+        
+        try {
 			conn = getConnection();
-			pstmt = conn.prepareStatement("delete from book where book_id = ?");
-			pstmt.setInt(1, bookId);
-			pstmt.executeUpdate();
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-	}
+
+            pstmt = conn.prepareStatement(
+            	"delete from book where book_id=?");
+            pstmt.setInt(1, bookId);
+            
+            pstmt.executeUpdate();
+            
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) 
+            	try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) 
+            	try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) 
+            	try { conn.close(); } catch(SQLException ex) {}
+        }
+    }
 }

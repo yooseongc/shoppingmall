@@ -2,24 +2,19 @@ package bookshop.bean;
 
 import java.sql.Timestamp;
 
-/**
- * ��ǰ ����, ���� ���� �κп��� ����ϴ� DTO Bean. 
- * @author ����
- */
 public class MngrDataBean {
-	
-	private int book_id;
-	private String book_kind;
-	private String book_title;
-	private int book_price;
-	private short book_count;
-	private String author;
-	private String publishing_com;
-	private String publishing_date;
-	private String book_image;
-	private String book_content;
-	private byte discount_rate;
-	private Timestamp reg_date;
+	private int book_id; //책의 등록번호
+	private String book_kind; //책의 분류
+	private String book_title; //책이름
+	private int book_price; //책가격
+	private short book_count; //책의 재고수량
+	private String author; //저자
+	private String publishing_com; //출판사
+	private String publishing_date; //출판일
+	private String book_image; //책이미지명
+	private String book_content; //책의내용
+	private byte discount_rate; //책의 할인율
+	private Timestamp reg_date; //책의 등록날짜
 	
 	public int getBook_id() {
 		return book_id;
@@ -93,7 +88,4 @@ public class MngrDataBean {
 	public void setReg_date(Timestamp reg_date) {
 		this.reg_date = reg_date;
 	}
-	
-	
-	
 }

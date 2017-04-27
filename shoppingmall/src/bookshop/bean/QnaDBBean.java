@@ -13,353 +13,329 @@ import javax.sql.DataSource;
 
 public class QnaDBBean {
 	
-	private static QnaDBBean instance = new QnaDBBean();
+    private static QnaDBBean instance = new QnaDBBean();
 	
-	public static QnaDBBean getInstance() {
-		return instance;
-	}
-	
-	private QnaDBBean() { }
-	
-	private Connection getConnection() throws Exception {
-		Context initCtx = new InitialContext();
-		Context envCtx = (Context) initCtx.lookup("java:comp/env");
-		DataSource ds = (DataSource) envCtx.lookup("jdbc/shoppingmall");
-		return ds.getConnection();
-	}
-	
-	/**
-	 * QnA Å×ÀÌºí¿¡ ±ÛÀ» Ãß°¡ÇÏ´Â ¸Ş¼Òµå. »ç¿ëÀÚ°¡ ÀÛ¼ºÇÏ´Â ±Û ÀÔ·Â. 
-	 * @param article
-	 * @return ·¹ÄÚµå Ãß°¡ ¼º°øÇÏ¸é 1, ½ÇÆĞÇÏ¸é 0ÀÌ ¹İÈ¯.
-	 */
-	@SuppressWarnings("resource")
-	public int insertArticle(QnaDataBean article) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
+    //.jspí˜ì´ì§€ì—ì„œ DBì—°ë™ë¹ˆì¸ BoardDBBeaní´ë˜ìŠ¤ì˜ ë©”ì†Œë“œì— ì ‘ê·¼ì‹œ í•„ìš”
+    public static QnaDBBean getInstance() {
+        return instance;
+    }
+    
+    private QnaDBBean(){}
+    
+    //ì»¤ë„¥ì…˜í’€ë¡œë¶€í„° Connectionê°ì²´ë¥¼ ì–»ì–´ëƒ„
+    private Connection getConnection() throws Exception {
+      Context initCtx = new InitialContext();
+      Context envCtx = (Context) initCtx.lookup("java:comp/env");
+      DataSource ds = (DataSource)envCtx.lookup("jdbc/shoppingmall");
+      return ds.getConnection();
+    }
+    
+    //qnaí…Œì´ë¸”ì— ê¸€ì„ ì¶”ê°€ - ì‚¬ìš©ìê°€ ì‘ì„±í•˜ëŠ” ê¸€
+    @SuppressWarnings("resource")
+	public int insertArticle(QnaDataBean article){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		int x = 0;
-		String sql = "";
-		int group_id = 1;
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select max(qna_id) from qna");
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				x = rs.getInt(1);
-			}
-			if (x > 0) {
-				group_id = rs.getInt(1) + 1;
-			}
-			
-			sql = "insert into qna (qna_id, book_id, book_title, qna_writer, qna_content, ";
-			sql += "group_id, qora, reply, reg_date) values (qna_seq.nextval, ?, ?, ?, ?, ?, ?, ?, ?)";
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setInt(1, article.getBook_id());
-			pstmt.setString(2, article.getBook_title());
-			pstmt.setString(3, article.getQna_writer());
-			pstmt.setString(4, article.getQna_content());
-			pstmt.setInt(5, group_id);
-			pstmt.setInt(6, article.getQora());
-			pstmt.setInt(7, article.getReply());
+        String sql="";
+        int group_id = 1;        
+        try {
+            conn = getConnection();
+            
+            pstmt = conn.prepareStatement("select max(qna_id) from qna");
+            rs = pstmt.executeQuery();
+            
+            if (rs.next()) 
+                x= rs.getInt(1);
+            
+            if(x > 0)
+               group_id = rs.getInt(1)+1;
+                   	
+            // ì¿¼ë¦¬ë¥¼ ì‘ì„± :boardí…Œì´ë¸”ì— ìƒˆë¡œìš´ ë ˆì½”ë“œ ì¶”ê°€
+            sql = "insert into qna(book_id,book_title,qna_writer,qna_content,";
+		    sql += "group_id,qora,reply,reg_date) values(?,?,?,?,?,?,?,?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, article.getBook_id());
+            pstmt.setString(2, article.getBook_title());
+            pstmt.setString(3, article.getQna_writer());
+            pstmt.setString(4, article.getQna_content());
+            pstmt.setInt(5, group_id);
+            pstmt.setInt(6, article.getQora());
+            pstmt.setInt(7, article.getReply());
 			pstmt.setTimestamp(8, article.getReg_date());
-			pstmt.executeUpdate();
-			
-			x = 1;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-		return x;
-	}
-	
-	/**
-	 * QnA Å×ÀÌºí¿¡ ±ÛÀ» Ãß°¡ÇÏ´Â ¸Ş¼Òµå. °ü¸®ÀÚ°¡ ÀÛ¼ºÇÏ´Â ´äº¯ ÀÔ·Â. 
-	 * °ü¸®ÀÚ ´äº¯ÀÌ ´Ş¸®¸é ÇØ´ç Áú¹®±Û¿¡ ´ëÇÏ¿© reply°¡ 0¿¡¼­ 1·Î ¼öÁ¤µÈ´Ù. 
-	 * @param article
-	 * @return ·¹ÄÚµå Ãß°¡ ¼º°øÇÏ¸é 1, ½ÇÆĞÇÏ¸é 0ÀÌ ¹İÈ¯.
-	 */
-	@SuppressWarnings("resource")
-	public int insertArticle(QnaDataBean article, int qna_id) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
+            pstmt.executeUpdate();
+            
+            x = 1; //ë ˆì½”ë“œ ì¶”ê°€ ì„±ê³µ
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+			if (rs != null) try{ rs.close(); }catch(SQLException ex) {}
+            if (pstmt != null) try{ pstmt.close(); }catch(SQLException ex) {}
+            if (conn != null) try{ conn.close(); }catch(SQLException ex) {}
+        }
+        return x;
+    }
+    
+    //qnaí…Œì´ë¸”ì— ê¸€ì„ ì¶”ê°€ - ê´€ë¦¬ìê°€ ì‘ì„±í•œ ë‹µë³€
+    @SuppressWarnings("resource")
+	public int insertArticle(QnaDataBean article, int qna_id){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
 		ResultSet rs = null;
 		int x = 0;
-		String sql = "";
-		try {
-			conn = getConnection();
-			
-			sql = "insert into qna (qna_id, book_id, book_title, qna_writer, qna_content, ";
-			sql += "group_id, qora, reply, reg_date) values (qna_seq.nextval, ?, ?, ?, ?, ?, ?, ?, ?)";
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setInt(1, article.getBook_id());
-			pstmt.setString(2, article.getBook_title());
-			pstmt.setString(3, article.getQna_writer());
-			pstmt.setString(4, article.getQna_content());
-			pstmt.setInt(5, article.getGroup_id());
-			pstmt.setInt(6, article.getQora());
-			pstmt.setInt(7, article.getReply());
+        String sql="";
+        
+        try {
+            conn = getConnection();
+            
+            // ì¿¼ë¦¬ë¥¼ ì‘ì„± :boardí…Œì´ë¸”ì— ìƒˆë¡œìš´ ë ˆì½”ë“œ ì¶”ê°€
+            sql = "insert into qna(book_id,book_title,qna_writer,qna_content,";
+		    sql += "group_id,qora,reply,reg_date) values(?,?,?,?,?,?,?,?)";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, article.getBook_id());
+            pstmt.setString(2, article.getBook_title());
+            pstmt.setString(3, article.getQna_writer());
+            pstmt.setString(4, article.getQna_content());
+            pstmt.setInt(5, article.getGroup_id());
+            pstmt.setInt(6, article.getQora());
+            pstmt.setInt(7, article.getReply());
 			pstmt.setTimestamp(8, article.getReg_date());
-			pstmt.executeUpdate();
-			
-			sql = "update qna set reply = ? where qna_id = ?";
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setInt(1, 1);
-			pstmt.setInt(2, qna_id);
-			pstmt.executeUpdate();
-			
-			x = 1;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+            pstmt.executeUpdate();
+            
+            sql="update qna set reply=? where qna_id=?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, 1);
+		    pstmt.setInt(2, qna_id);
+            pstmt.executeUpdate();
+            
+            x = 1; //ë ˆì½”ë“œ ì¶”ê°€ ì„±ê³µ
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+			if (rs != null) try{ rs.close(); }catch(SQLException ex) {}
+            if (pstmt != null) try{ pstmt.close(); }catch(SQLException ex) {}
+            if (conn != null) try{ conn.close(); }catch(SQLException ex) {}
+        }
+        return x;
+    }
+    
+    //qnaí…Œì´ë¸”ì— ì €ì¥ëœ ì „ì²´ê¸€ì˜ ìˆ˜ë¥¼ ì–»ì–´ëƒ„
+	public int getArticleCount(){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int x=0;
+
+        try {
+            conn = getConnection();
+            
+            pstmt = conn.prepareStatement("select count(*) from qna");
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) 
+               x= rs.getInt(1);
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try{ rs.close(); }catch(SQLException ex) {}
+            if (pstmt != null) try{ pstmt.close(); }catch(SQLException ex) {}
+            if (conn != null) try{ conn.close(); }catch(SQLException ex) {}
+        }
 		return x;
-	}
+    }
 	
-	/**
-	 * QnA Å×ÀÌºí¿¡ µî·ÏµÈ ÀüÃ¼ ±Û ¼ö¸¦ ¾ò¾î³»´Â ¸Ş¼Òµå. 
-	 * @return QnA Å×ÀÌºíÀÇ ÃÑ ·¹ÄÚµå ¼ö.
-	 */
-	public int getArticleCount() {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		int x = 0;
+	//íŠ¹ì • ì±…ì— ëŒ€í•´ ì‘ì„±í•œ qnaê¸€ì˜ ìˆ˜ë¥¼ ì–»ì–´ëƒ„
+	public int getArticleCount(int book_id){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        int x=0;
+
+        try {
+            conn = getConnection();
+            
+            pstmt = conn.prepareStatement("select count(*) from qna where book_id = "+book_id);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) 
+               x= rs.getInt(1);
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try{ rs.close(); }catch(SQLException ex) {}
+            if (pstmt != null) try{ pstmt.close(); }catch(SQLException ex) {}
+            if (conn != null) try{ conn.close(); }catch(SQLException ex) {}
+        }
+		return x;
+    }
+	
 		
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select count(*) from qna");
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				x = rs.getInt(1);
+    //ì§€ì •í•œ ìˆ˜ì— í•´ë‹¹í•˜ëŠ” qnaê¸€ì˜ ìˆ˜ë¥¼ ì–»ì–´ëƒ„
+	public List<QnaDataBean> getArticles(int count){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<QnaDataBean> articleList=null;//ê¸€ëª©ë¡ì„ ì €ì¥í•˜ëŠ” ê°ì²´
+        try {
+            conn = getConnection();
+            
+            pstmt = conn.prepareStatement(
+            	"select * from qna order by group_id desc, qora asc");
+            
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {//ResultSetì´ ë ˆì½”ë“œë¥¼ ê°€ì§
+                articleList = new ArrayList<QnaDataBean>(count);
+                do{
+                  QnaDataBean article= new QnaDataBean();
+				  article.setQna_id(rs.getInt("qna_id")); 
+				  article.setBook_id(rs.getInt("book_id"));
+				  article.setBook_title(rs.getString("book_title"));
+                  article.setQna_writer(rs.getString("qna_writer"));
+                  article.setQna_content(rs.getString("qna_content"));
+                  article.setGroup_id(rs.getInt("group_id"));
+                  article.setQora(rs.getByte("qora"));
+                  article.setReply(rs.getByte("reply"));
+			      article.setReg_date(rs.getTimestamp("reg_date"));
+
+				  //Listê°ì²´ì— ë°ì´í„°ì €ì¥ë¹ˆì¸ BoardDataBeanê°ì²´ë¥¼ ì €ì¥
+                  articleList.add(article);
+			    }while(rs.next());
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-		return x;
-	}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) try { conn.close(); } catch(SQLException ex) {}
+        }
+		return articleList;//Listê°ì²´ì˜ ë ˆí¼ëŸ°ìŠ¤ë¥¼ ë¦¬í„´
+    }
 	
-	/**
-	 * Æ¯Á¤ Ã¥¿¡ ´ëÇØ ÀÛ¼ºÇÑ QnA ±ÛÀÇ ¼ö¸¦ ¾ò¾î³»´Â ¸Ş¼Òµå.
-	 * @param book_id
-	 * @return Æ¯Á¤ Ã¥¿¡ ´ëÇÑ QnA Å×ÀÌºí ·¹ÄÚµå ¼ö.
-	 */
-	public int getArticleCount(int book_id) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		int x = 0;
-		
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select count(*) from qna where book_id = " + book_id);
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				x = rs.getInt(1);
+	//íŠ¹ì • ì±…ì— ëŒ€í•´ ì‘ì„±í•œ qnaê¸€ì„ ì§€ì •í•œ ìˆ˜ ë§Œí¼ ì–»ì–´ëƒ„
+	public List<QnaDataBean> getArticles(int count, int book_id){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        List<QnaDataBean> articleList=null;//ê¸€ëª©ë¡ì„ ì €ì¥í•˜ëŠ” ê°ì²´
+        try {
+            conn = getConnection();
+           
+            pstmt = conn.prepareStatement(
+            	"select * from qna where book_id="+book_id+" order by group_id desc, qora asc");
+            
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {//ResultSetì´ ë ˆì½”ë“œë¥¼ ê°€ì§
+                articleList = new ArrayList<QnaDataBean>(count);
+                do{
+                  QnaDataBean article= new QnaDataBean();
+				  article.setQna_id(rs.getInt("qna_id")); 
+				  article.setBook_id(rs.getInt("book_id"));
+				  article.setBook_title(rs.getString("book_title"));
+                  article.setQna_writer(rs.getString("qna_writer"));
+                  article.setQna_content(rs.getString("qna_content"));
+                  article.setGroup_id(rs.getInt("group_id"));
+                  article.setQora(rs.getByte("qora"));
+                  article.setReply(rs.getByte("reply"));
+			      article.setReg_date(rs.getTimestamp("reg_date"));
+
+				  //Listê°ì²´ì— ë°ì´í„°ì €ì¥ë¹ˆì¸ BoardDataBeanê°ì²´ë¥¼ ì €ì¥
+                  articleList.add(article);
+			    }while(rs.next());
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-		return x;
-	}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try { rs.close(); } catch(SQLException ex) {}
+            if (pstmt != null) try { pstmt.close(); } catch(SQLException ex) {}
+            if (conn != null) try { conn.close(); } catch(SQLException ex) {}
+        }
+		return articleList;//Listê°ì²´ì˜ ë ˆí¼ëŸ°ìŠ¤ë¥¼ ë¦¬í„´
+    }
 	
-	/**
-	 * ÁöÁ¤ÇÑ ¼ö¿¡ ÇØ´çÇÏ´Â QnA ±ÛÀÇ ¼ö¸¦ ¾ò¾î³»´Â ¸Ş¼Òµå. ´Â °³»Ô
-	 * getArticleCount ¸Ş¼Òµå¸¦ »ç¿ëÇÑ °á°ú°ªÀ» ³Ö¾î¼­ °á±¹ ÀüÃ¼ ±Û °´Ã¼ ¹è¿­À» 
-	 * ¹İÈ¯ÇÏ´Â ¸Ş¼Òµå.
-	 * @param count
-	 * @return QnA Å×ÀÌºí ·¹ÄÚµå Á¤º¸°¡ µé¾îÀÖ´Â QnaDataBeen °´Ã¼µéÀÌ µé¾îÀÖ´Â
-	 * List °´Ã¼ ¹İÈ¯.
-	 */
-	public List<QnaDataBean> getArticles(int count) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		List<QnaDataBean> articleList = null;
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select * from qna order by group_id desc, qora asc");
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				articleList = new ArrayList<QnaDataBean>(count);
-				do {
-					QnaDataBean article = new QnaDataBean();
-					article.setQna_id(rs.getInt("qna_id"));
-					article.setBook_id(rs.getInt("book_id"));
-					article.setBook_title(rs.getString("book_title"));
-					article.setQna_writer(rs.getString("qna_writer"));
-					article.setQna_content(rs.getString("qna_content"));
-					article.setGroup_id(rs.getInt("group_id"));
-					article.setQora(rs.getByte("qora"));
-					article.setReply(rs.getByte("reply"));
-					article.setReg_date(rs.getTimestamp("reg_date"));
-					
-					articleList.add(article);
-				} while (rs.next());
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-		return articleList;
-	}
-	
-	/**
-	 * ÁöÁ¤ÇÑ ¼ö¿¡ ÇØ´çÇÏ´Â Æ¯Á¤ Ã¥¿¡ ´ëÇÑ QnA ±ÛÀÇ ¼ö¸¦ ¾ò¾î³»´Â ¸Ş¼Òµå. ´Â °³»Ô
-	 * getArticleCount ¸Ş¼Òµå¸¦ »ç¿ëÇÑ °á°ú°ªÀ» ³Ö¾î¼­ °á±¹ Æ¯Á¤ Ã¥¿¡ ´ëÇÑ qna ÀüÃ¼ ±Û °´Ã¼ ¹è¿­À» 
-	 * ¹İÈ¯ÇÏ´Â ¸Ş¼Òµå.
-	 * @param count
-	 * @param book_id
-	 * @return QnA Å×ÀÌºí ·¹ÄÚµå Á¤º¸Áß Æ¯Á¤ Ã¥ Á¤º¸°¡ µé¾îÀÖ´Â QnaDataBeen °´Ã¼µéÀÌ µé¾îÀÖ´Â
-	 * List °´Ã¼ ¹İÈ¯.
-	 */
-	public List<QnaDataBean> getArticles(int count, int book_id) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		List<QnaDataBean> articleList = null;
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select * from qna where book_id = " 
-					+ book_id + " order by group_id desc, qora asc");
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				articleList = new ArrayList<QnaDataBean>(count);
-				do {
-					QnaDataBean article = new QnaDataBean();
-					article.setQna_id(rs.getInt("qna_id"));
-					article.setBook_id(rs.getInt("book_id"));
-					article.setBook_title(rs.getString("book_title"));
-					article.setQna_writer(rs.getString("qna_writer"));
-					article.setQna_content(rs.getString("qna_content"));
-					article.setGroup_id(rs.getInt("group_id"));
-					article.setQora(rs.getByte("qora"));
-					article.setReply(rs.getByte("reply"));
-					article.setReg_date(rs.getTimestamp("reg_date"));
-					
-					articleList.add(article);
-				} while (rs.next());
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
-		return articleList;
-	}
-	
-	/**
-	 * qna °Ô½ÃÆÇ ±ÛÀ» ¼öÁ¤ÇÏ±â À§ÇØ ÇØ´ç ±Û Á¤º¸¸¦ °¡Á®¿À´Â ¸Ş¼Òµå.
-	 * @param qna_id
-	 * @return ¼öÁ¤ÇÏ±â À§ÇÑ ±âÁ¸ ±ÛÀÇ QnaDataBean °´Ã¼ Á¤º¸.
-	 */
-	public QnaDataBean updateGetArticle(int qna_id) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		QnaDataBean article = null;
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement("select * from qna where qna_id = ?");
-			pstmt.setInt(1, qna_id);
-			rs = pstmt.executeQuery();
-			
-			if (rs.next()) {
-				article = new QnaDataBean();
-				article.setQna_id(rs.getInt("qna_id"));
+    //QnAê¸€ ìˆ˜ì •í¼ì—ì„œ ì‚¬ìš©í•  ê¸€ì˜ ë‚´ìš©
+    public QnaDataBean updateGetArticle(int qna_id){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
+        QnaDataBean article=null;
+        try {
+            conn = getConnection();
+
+            pstmt = conn.prepareStatement(
+            	"select * from qna where qna_id = ?");
+            pstmt.setInt(1, qna_id);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                article = new QnaDataBean();
+                article.setQna_id(rs.getInt("qna_id")); 
 				article.setBook_id(rs.getInt("book_id"));
 				article.setBook_title(rs.getString("book_title"));
-				article.setQna_writer(rs.getString("qna_writer"));
-				article.setQna_content(rs.getString("qna_content"));
-				article.setGroup_id(rs.getInt("group_id"));
-				article.setQora(rs.getByte("qora"));
-				article.setReply(rs.getByte("reply"));
-				article.setReg_date(rs.getTimestamp("reg_date"));
+                article.setQna_writer(rs.getString("qna_writer"));
+                article.setQna_content(rs.getString("qna_content"));
+                article.setGroup_id(rs.getInt("group_id"));
+                article.setQora(rs.getByte("qora"));
+                article.setReply(rs.getByte("reply"));
+			    article.setReg_date(rs.getTimestamp("reg_date"));     
 			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (rs != null) try { rs.close(); } catch (SQLException ex) { }
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try{rs.close();}catch(SQLException ex){}
+            if (pstmt != null) try{pstmt.close();}catch(SQLException ex){}
+            if (conn != null) try{conn.close();}catch(SQLException ex){}
+        }
 		return article;
-	}
-	
-	/**
-	 * QnA ±ÛÀÇ ³»¿ëÀ» ¼öÁ¤ÇÏ±â À§ÇÑ ¸Ş¼Òµå.
-	 * @param article
-	 * @return ¼öÁ¤ÀÌ Á¤»óÀûÀ¸·Î Ã³¸®µÇ¸é 1, ±×·¸Áö ¾ÊÀ¸¸é -1ÀÌ ¹İÈ¯µÈ´Ù.
-	 */
-	public int updateArticle(QnaDataBean article) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		int x = -1;
-		try {
-			conn = getConnection();
-			
-			String sql = "update qna set qna_content = ? where qna_id = ?";
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setString(1, article.getQna_content());
+    }
+    
+    //QnAê¸€ ìˆ˜ì • ìˆ˜ì •ì²˜ë¦¬ì—ì„œ ì‚¬ìš©
+	public int updateArticle(QnaDataBean article){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs= null;
+		int x=-1;
+        try {
+            conn = getConnection();
+            
+            String sql="update qna set qna_content=? where qna_id=?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, article.getQna_content());
 			pstmt.setInt(2, article.getQna_id());
-			pstmt.executeUpdate();
-			x = 1;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+            pstmt.executeUpdate();
+			x= 1;
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+			if (rs != null) try{ rs.close(); }catch(SQLException ex) {}
+            if (pstmt != null) try{ pstmt.close(); }catch(SQLException ex) {}
+            if (conn != null) try{ conn.close(); }catch(SQLException ex) {}
+        }
 		return x;
-	}
-	
-	/**
-	 * QnA ±ÛÀ» »èÁ¦ÇÏ±â À§ÇÑ ¸Ş¼Òµå.
-	 * @param qna_id
-	 * @return »èÁ¦°¡ Á¤»óÀûÀ¸·Î Ã³¸®µÇ¸é 1, ±×·¸Áö ¾ÊÀ¸¸é -1ÀÌ ¹İÈ¯µÈ´Ù.
-	 */
-	public int deleteArticle(int qna_id) {
-		Connection conn = null;
-		PreparedStatement pstmt = null;
-		int x = -1;
-		try {
+    }
+    
+    //QnAê¸€ ìˆ˜ì •ì‚­ì œì²˜ë¦¬ì‹œ ì‚¬ìš©
+	public int deleteArticle(int qna_id){
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs= null;
+        int x=-1;
+        try {
 			conn = getConnection();
-			
-			pstmt = conn.prepareStatement("delete from qna where qna_id = ?");
-			pstmt.setInt(1, qna_id);
-			pstmt.executeUpdate();
-			x = 1;
-		} catch (Exception ex) {
-			ex.printStackTrace();
-		} finally {
-			if (pstmt != null) try { pstmt.close(); } catch (SQLException ex) { }
-			if (conn != null) try { conn.close(); } catch (SQLException ex) { }
-		}
+
+            pstmt = conn.prepareStatement(
+            	      "delete from qna where qna_id=?");
+            pstmt.setInt(1, qna_id);
+            pstmt.executeUpdate();
+			x= 1; //ê¸€ì‚­ì œ ì„±ê³µ
+        } catch(Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (rs != null) try{ rs.close(); }catch(SQLException ex) {}
+            if (pstmt != null) try{ pstmt.close(); }catch(SQLException ex) {}
+            if (conn != null) try{ conn.close(); }catch(SQLException ex) {}
+        }
 		return x;
-	}
-	
+    }
 }
