@@ -3,22 +3,38 @@ package bookshop.command;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class InsertCartAction implements CommandAction{
+import bookshop.bean.CartDBBean;
+import bookshop.bean.CartDataBean;
+
+public class InsertCartAction implements CommandAction {
 
 	@Override
 	public String requestPro(HttpServletRequest request, HttpServletResponse response) throws Throwable {
 		request.setCharacterEncoding("utf-8");
-		
-		//Àå¹Ù±¸´Ï¿¡ Ãß°¡ÇÒ Á¤º¸¸¦ ÆÄ¶ó¹ÌÅÍ¿¡¼­ ¹Ş¾Æ³¿
+
+		// ì¥ë°”êµ¬ë‹ˆì— ì¶”ê°€í•  ì •ë³´ë¥¼ íŒŒë¼ë¯¸í„°ì—ì„œ ë°›ì•„ëƒ„
 		byte buy_count = Byte.parseByte(request.getParameter("buy_count"));
 		int book_id = Integer.parseInt(request.getParameter("book_id"));
 		String book_title = request.getParameter("bookt_title");
 		String book_image = request.getParameter("book_image");
-		int buy_price = (int)Float.parseFloat(request.getParameter("buy_price"));
+		int buy_price = (int) Float.parseFloat(request.getParameter("buy_price"));
 		String buyer = request.getParameter("buyer");
-		
-		//Àå¹Ù±¸´Ï¿¡ Ãß°¡ÇÏ±â À§ÇÑ Á¤º¸ ±¸¼º
-		return null;
+
+		// ì¥ë°”êµ¬ë‹ˆì— ì¶”ê°€í•˜ê¸° ìœ„í•œ ì •ë³´ êµ¬ì„±
+		CartDataBean cart = new CartDataBean();
+		cart.setBook_id(book_id);
+		cart.setBook_image(book_image);
+		cart.setBook_title(book_title);
+		cart.setBuy_count(buy_count);
+		cart.setBuy_price(buy_price);
+		cart.setBuyer(buyer);
+
+		// ì¥ë°”êµ¬ë‹ˆì— ì¶”ê°€
+		CartDBBean bookProcess = CartDBBean.getInstance();
+		bookProcess.insertCart(cart);
+
+		return "/cart/insertCart.jsp";
+
 	}
 
 }

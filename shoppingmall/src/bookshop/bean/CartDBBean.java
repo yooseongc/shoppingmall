@@ -12,9 +12,9 @@ import javax.naming.InitialContext;
 import javax.sql.DataSource;
 
 public class CartDBBean {
-	private static CartDataBean instance = new CartDataBean();
+	private static CartDBBean instance = new CartDBBean();
 
-	public static CartDataBean getInstance() {
+	public static CartDBBean getInstance() {
 		return instance;
 	}
 
