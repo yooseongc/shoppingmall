@@ -1,0 +1,26 @@
+Signature-Version: 1.0
+SHA-256-Digest-Manifest-Main-Attributes: 3hQ71EI57pqfppoMtMZo4rpJB26sv
+ HqQBKkIBSBZ/D0=
+SHA-256-Digest-Manifest: J9nVIjpxN6z2mz0KSrF0hXjTD5vchOkh81F0lnLjVtY=
+Created-By: 1.8.0_102 (Oracle Corporation)
+
+Name: epl-v10.html
+SHA-256-Digest: 8GSw4aNBim+4CHFc1TYSYQy3Ei4T2BVP57HxmJUvTBs=
+
+Name: META-INF/maven/org.eclipse.tm.terminal/org.eclipse.tm.terminal.c
+ onnector.telnet.feature/pom.xml
+SHA-256-Digest: 2cTHT1IemfpCwo8AX2jptHM3T6PtOrlg4k6Xo7m9fDs=
+
+Name: feature.xml
+SHA-256-Digest: /hcv56wtBTUWq8TuyK2L2QYmYRea2aWthlzQFj5uFkA=
+
+Name: feature.properties
+SHA-256-Digest: Bpj90PHBzHh6tVXUc9rhz0sMxB25kyDWLimBXU2O/88=
+
+Name: license.html
+SHA-256-Digest: gb5ZzrbOyFArzDLUIG4huZV/GHHBYb0EtixuMKXnhqs=
+
+Name: META-INF/maven/org.eclipse.tm.terminal/org.eclipse.tm.terminal.c
+ onnector.telnet.feature/pom.properties
+SHA-256-Digest: 6OGMNgN+LlrzXapMXbvzUan2FozSWdgpyMVxv0C9SF0=
+

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="org.eclipse.wst.web_core.feature"
+      label="%featureName"
+      version="3.8.2.v201702270442"
+      provider-name="%providerName">
+
+   <description>
+      %description
+   </description>
+
+   <copyright>
+      %copyright
+   </copyright>
+
+   <license url="%licenseURL">
+      %license
+   </license>
+
+   <includes
+         id="org.eclipse.wst.jsdt.feature"
+         version="2.0.200.v201612211424"/>
+
+   <includes
+         id="org.eclipse.wst.common_core.feature"
+         version="3.8.2.v201701191735"/>
+
+   <includes
+         id="org.eclipse.wst.xml_core.feature"
+         version="3.8.2.v201702270442"/>
+
+   <includes
+         id="org.eclipse.wst.server_core.feature"
+         version="3.3.601.v201610211907"/>
+         
+   <includes
+         id="org.eclipse.wst.json_core.feature"
+         version="1.0.2.v201612232230"/>
+
+   <plugin
+         id="org.eclipse.wst.css.core"
+         download-size="525"
+         install-size="1282"
+         version="1.1.900.v201603171933"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.wst.html.core"
+         download-size="736"
+         install-size="1531"
+         version="1.2.1.v201608061844"
+         unpack="false"/>
+
+   <plugin
+         id="org.eclipse.wst.web"
+         download-size="71"
+         install-size="135"
+         version="1.1.800.v201312041437"
+         unpack="false"/>
+
+</feature>

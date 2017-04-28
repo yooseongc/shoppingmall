@@ -1,0 +1,26 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Built-By: genie.webtools
+Created-By: Apache Maven 3.2.5
+Build-Jdk: 1.8.0_121
+
+Name: epl-v10.html
+SHA-256-Digest: mpbQ2vmKpvtKpTDTmcdCxmEhsL2uSh9/+iLSE14d9/0=
+
+Name: feature.xml
+SHA-256-Digest: UOECC4DKBK65noWS8zuL81jaG40xly0A1W/vxaiSQjY=
+
+Name: feature.properties
+SHA-256-Digest: goMJJ2RwMhJslf2Hvx2R027s6JrogEjWpSjNFJaSA7Q=
+
+Name: META-INF/maven/org.eclipse.webtools.sourceediting/org.eclipse.ws
+ t.web_ui.feature/pom.xml
+SHA-256-Digest: uZsHjn4CL8mFNCgTU8j1+k+Cr1FSsZkTohlAHYBv8FQ=
+
+Name: META-INF/maven/org.eclipse.webtools.sourceediting/org.eclipse.ws
+ t.web_ui.feature/pom.properties
+SHA-256-Digest: hMaQ9tBXGwwtS1AktElwXJ7l5epVQANeRYXt3/jcMRI=
+
+Name: license.html
+SHA-256-Digest: X315zLynvdLZ4DaYSopgxruQUUEadA3FOPNviC+YO24=
+
