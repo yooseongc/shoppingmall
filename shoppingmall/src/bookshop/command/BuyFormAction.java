@@ -17,6 +17,7 @@ public class BuyFormAction implements CommandAction{
 		
 		List<CartDataBean> cartList = null;
 		List<String> accountLists = null;
+
 		return null;
 	}
 
